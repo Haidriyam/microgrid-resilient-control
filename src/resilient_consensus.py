@@ -3,13 +3,12 @@ Secondary Frequency Consensus Protocol with Attack Resilient Filtering.
 Protects microgrid inverters against False Data Injection (FDI) and packet drops.
 """
 from typing import List, Tuple
-import numpy as np
 
 
 class ResilientConsensusEngine:
     def __init__(self, f_nominal: float = 50.0, f_threshold: float = 0.5):
         self.f_nominal = f_nominal
-        self.f_threshold = f_threshold  # Max deviation tolerated before quarantine
+        self.f_threshold = f_threshold
 
     def sanitize_neighbor_telemetry(
         self,
@@ -25,7 +24,6 @@ class ResilientConsensusEngine:
             if abs(reading - local_freq) <= self.f_threshold:
                 sanitized.append(reading)
             else:
-                # Log FDI packet rejection
                 print(f"[SECURITY ALERT] FDI anomaly dropped: {reading:.2f} Hz from cluster")
         return sanitized
 
@@ -41,10 +39,8 @@ class ResilientConsensusEngine:
         """
         valid_neighbors = self.sanitize_neighbor_telemetry(local_freq, neighbor_broadcasts)
 
-        # Restoration error back to 50 Hz
         restoration_term = (self.f_nominal - local_freq)
 
-        # Peer synchronization consensus term
         if valid_neighbors:
             consensus_term = sum((f_j - local_freq) for f_j in valid_neighbors)
         else:
@@ -56,9 +52,8 @@ class ResilientConsensusEngine:
 def run_simulation() -> Tuple[float, float]:
     """Demonstrate secondary restoration with and without FDI attack."""
     engine = ResilientConsensusEngine()
-    inverter_local_f = 49.3  # Droop sagged frequency under heavy load
+    inverter_local_f = 49.3
 
-    # 3 neighboring inverters, one compromised sending +10 Hz falsified data
     incoming_data = [49.32, 49.28, 59.80]
 
     correction = engine.compute_secondary_correction(inverter_local_f, incoming_data)
