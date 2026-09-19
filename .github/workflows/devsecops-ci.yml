@@ -1,0 +1,36 @@
+name: Microgrid DevSecOps CI
+
+on: [push, pull_request]
+
+jobs:
+  devsecops-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Runtime & Test Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pytest -r requirements.txt
+
+      - name: Static Security Analysis (Bandit SAST)
+        run: |
+          # Fails pipeline on medium/high severity security flaws
+          bandit -r src/ -ll
+
+      - name: Code Quality & PEP8 Compliance
+        run: |
+          flake8 src/ tests/ --count --ignore=W292 --max-line-length=100 --statistics
+
+      - name: Execute Cyber-Physical Resilience Tests
+        run: |
+          PYTHONPATH=. pytest tests/ -v
+
+      - name: Build Hardened Container
+        run: |
+          docker build -t microgrid-resilient-control:latest .
